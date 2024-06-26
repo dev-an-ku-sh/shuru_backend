@@ -35,6 +35,11 @@ app = Flask(__name__)
 # Apply CORS to all routes, Needed for POST from Website
 CORS(app)
 
+#Connection testing
+@app.route('/test_connection', methods=['POST'])
+def test_connection():
+    return "CONNECTED"
+
 #Rephrase()
 @app.route('/rephrase', methods=['POST'])
 def rephrase():
@@ -91,7 +96,7 @@ def create_persona_list():
         return jsonify({"error": "Problem statement must be provided"}), 400
 
     chat_result = user_proxy.initiate_chat(recipient=persona_creator_assistant, 
-                                           message=problem_statement, silent=False, max_turns=1)
+    message=problem_statement, silent=False, max_turns=1)
     raw_list = chat_result.chat_history[1]['content']
     print(raw_list)
 
@@ -114,6 +119,22 @@ def create_persona_list():
 
     # Return the evaluated list directly in the response
     return jsonify({"response": evaluated_list})
+
+#Persona Creation
+@app.route('/create_custom_persona', methods=['POST'])
+def create_custom_persona():
+    problem_statement = request.json.get("problem_statement")
+    user_input = request.json.get("user_input")
+    custom_persona_creator_assistant = autogen.AssistantAgent(
+        name = "custom_persona_creator_assistant", 
+        llm_config=mistral,
+        system_message= 'Refer to this example list: {"Name" : "Population Control Paul",  "POV" : "Promote and implement government policies that provide incentives for smaller families such as financial benefits and subsidies."}, you have to create a similar json list of 1 imaginary persona based on input: ' + user_input + ' on how to approach the solution of the problem: ' + problem_statement + 'The list should follow the exact format of the example list mentioned before. Do not output anything else except the list. Only the list is needed'
+    )
+    chat_result = user_proxy.initiate_chat(recipient=custom_persona_creator_assistant, message='Refer to this example list: {"Name" : "Population Control Paul",  "POV" : "Promote and implement government policies that provide incentives for smaller families such as financial benefits and subsidies."}, you have to create a similar json list of 1 imaginary persona based on input: ' + user_input + ' on how to approach the solution of the problem: ' + problem_statement + 'The list should follow the exact format of the example list mentioned before. Do not output anything else except the list. Only the list is needed', silent = False, max_turns=1 )
+    cleaned_content = chat_result.chat_history[1]['content'].replace("\\", "").replace("\n", " ")
+    print(cleaned_content)
+    return jsonify({"response": cleaned_content})
+   
 
 #get agent perspectives
 @app.route('/get_agent_perspective', methods=['POST'])
