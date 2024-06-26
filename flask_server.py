@@ -120,6 +120,44 @@ def create_persona_list():
     # Return the evaluated list directly in the response
     return jsonify({"response": evaluated_list})
 
+# @app.route('/create_persona', methods=['POST'])
+# def create_persona():
+#     user_input = request.json.get("user_input")
+#     problem_statement = request.json.get("problem_statement")
+#     #Persona_Creator Assistant
+#     persona_creator_assistant = autogen.AssistantAgent(
+#         name="Persona Creator Assistant",
+#         llm_config=mistral,
+#         system_message="Refer to this example list: [['Population Control Paul', 'Promote and implement government policies that provide incentives for smaller families such as financial benefits and subsidies.'],['Educated Eva', 'Advocate for and invest in accessible education for girls and women to increase their economic opportunities, leading to later marriage and fewer children.'],['Sustainability Sam', 'Encourage sustainable living practices and access to family planning resources to help individuals make informed decisions about the number of children they want.'],['Religious Reuben', 'Collaborate with religious leaders and institutions to promote responsible family planning within their communities, incorporating teachings that emphasize the importance of small families.'],['Technology Tamara', 'Leverage technology such as education apps, contraceptive delivery services, and telemedicine to make family planning more accessible and convenient.']], you have to create a list of 1 imaginary persona having unique opinion based on the user input :' " + user_input  + " 'on how approach the solution of the given problem. The list should follow the exact format of the example list mentioned before. Do not output anything else except the list. Only the list is needed"
+#      )
+#     if problem_statement is None:
+#         return jsonify({"error": "Problem statement must be provided"}), 400
+
+#     chat_result = user_proxy.initiate_chat(recipient=persona_creator_assistant, 
+#     message=problem_statement, silent=False, max_turns=1)
+#     raw_list = chat_result.chat_history[1]['content']
+#     print(raw_list)
+
+#     # Find the start and end of the list in the string
+#     start_index = raw_list.find('[')
+#     end_index = raw_list.rfind(']') + 1  # +1 to include the closing bracket
+
+#     # Extract the list part of the string if both '[' and ']' are found
+#     if start_index != -1 and end_index != -1:
+#         list_str = raw_list[start_index:end_index]
+#     else:
+#         return jsonify({"error": "List not found in response"}), 400
+
+#     # Use ast.literal_eval to safely evaluate the string representation of the list
+#     try:
+#         evaluated_list = ast.literal_eval(list_str)
+#     except (ValueError, SyntaxError):
+#         # Handle the error if list_str is not a valid Python literal
+#         return jsonify({"error": "Invalid list format"}), 400
+
+#     # Return the evaluated list directly in the response
+#     return jsonify({"response": evaluated_list})
+
 #Persona Creation
 @app.route('/create_custom_persona', methods=['POST'])
 def create_custom_persona():
@@ -128,13 +166,31 @@ def create_custom_persona():
     custom_persona_creator_assistant = autogen.AssistantAgent(
         name = "custom_persona_creator_assistant", 
         llm_config=mistral,
-        system_message= 'Refer to this example list: {"Name" : "Population Control Paul",  "POV" : "Promote and implement government policies that provide incentives for smaller families such as financial benefits and subsidies."}, you have to create a similar json list of 1 imaginary persona based on input: ' + user_input + ' on how to approach the solution of the problem: ' + problem_statement + 'The list should follow the exact format of the example list mentioned before. Do not output anything else except the list. Only the list is needed'
-    )
-    chat_result = user_proxy.initiate_chat(recipient=custom_persona_creator_assistant, message='Refer to this example list: {"Name" : "Population Control Paul",  "POV" : "Promote and implement government policies that provide incentives for smaller families such as financial benefits and subsidies."}, you have to create a similar json list of 1 imaginary persona based on input: ' + user_input + ' on how to approach the solution of the problem: ' + problem_statement + 'The list should follow the exact format of the example list mentioned before. Do not output anything else except the list. Only the list is needed', silent = False, max_turns=1 )
-    cleaned_content = chat_result.chat_history[1]['content'].replace("\\", "").replace("\n", " ")
-    print(cleaned_content)
-    return jsonify({"response": cleaned_content})
-   
+        system_message= 'Refer to this example list: ["Population Control Paul", "Promote and implement government policies that provide incentives for smaller families such as financial benefits and subsidies."], you have to create a similar list of 1 imaginary person in the form ["Name", "Perspective"] based on input: ' + user_input + ' on how to approach the solution of the problem:  '+ problem_statement + '. The list should follow the exact format of the example list mentioned before. Do not output anything else except the list. Only the list is needed.'
+     )
+    chat_result = user_proxy.initiate_chat(recipient=custom_persona_creator_assistant, message= 'Refer to this example list: ["Population Control Paul", "Promote and implement government policies that provide incentives for smaller families such as financial benefits and subsidies."], you have to create a similar list of 1 imaginary person in the form ["Name", "Perspective"] based on input: ' + user_input + ' on how to approach the solution of the problem:  '+ problem_statement + '. The list should follow the exact format of the example list mentioned before. Do not output anything else except the list. Only the list is needed.', silent = False, max_turns=1 )
+    raw_list = chat_result.chat_history[1]['content']
+    # Assuming raw_list is the variable that contains the string representation of the list
+    # Find the start and end of the list in the string
+    start_index = raw_list.find('[')
+    end_index = raw_list.rfind(']') + 1  # +1 to include the closing bracket
+
+    # Extract the list part of the string if both '[' and ']' are found
+    if start_index != -1 and end_index != -1:
+        list_str = raw_list[start_index:end_index]
+    else:
+        return jsonify({"error": "List not found in response"}), 400
+
+    # Use ast.literal_eval to safely evaluate the string representation of the list
+    try:
+        evaluated_list = ast.literal_eval(list_str)
+    except (ValueError, SyntaxError):
+        # Handle the error if list_str is not a valid Python literal
+        return jsonify({"error": "Invalid list format"}), 400
+
+    # Return the evaluated list directly in the response
+    return jsonify({"name": str(evaluated_list[0]), "pov": str(evaluated_list[1])})
+    # return jsonify({"response": raw_list})
 
 #get agent perspectives
 @app.route('/get_agent_perspective', methods=['POST'])
